@@ -1,67 +1,189 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Admin Panel — Registrations</title>
 <style>
-  body{ background:#f5e9d2; font-family:"Cinzel",serif; margin:0; padding:24px; }
-  .panel{ max-width:980px; margin:24px auto; background:#fff8e0; padding:20px; border-radius:12px; border:3px solid #bfa35f; box-shadow:0 10px 30px rgba(0,0,0,0.12); }
-  h1{ text-align:center; color:#6b4e16; margin:6px 0 18px; }
-  iframe{ width:100%; height:640px; border-radius:10px; border:2px solid #bfa35f; }
-  .actions{ display:flex; gap:12px; margin-top:14px; }
-  .actions button{ flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; background:#b48a3b; color:#fff; font-size:15px; }
-  .actions button:hover{ background:#8e6b2a; }
-  .note{ font-size:13px; color:#5a4527; text-align:center; margin-top:10px; }
+  :root{--bg:#fff8e0;--accent:#b48a3b;--danger:#a83232;--text:#6b4e16}
+  body{background:#f5e9d2;font-family:Inter, "Cinzel", serif;margin:0;padding:20px;color:var(--text)}
+  .wrap{max-width:1100px;margin:12px auto;padding:20px;background:var(--bg);border-radius:12px;border:3px solid #bfa35f;}
+  h1{text-align:center}
+  .top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+  input.search, select.filter{padding:8px;border-radius:8px;border:1px solid #d8c9a6}
+  button{padding:10px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+  button.danger{background:var(--danger)}
+  .grid{display:grid;grid-template-columns:1fr 340px;gap:12px;margin-top:12px}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden}
+  th, td{padding:8px;border-bottom:1px solid #f0e9d0;font-size:13px;text-align:left}
+  th{background:#fff}
+  img.thumb{width:48px;height:48px;object-fit:cover;border-radius:6px}
+  .stats{background:#fff;padding:12px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)}
+  .note{font-size:13px;color:#5b4a2b}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<div class="panel" id="panel">
-  <h1>🔐 Admin Panel — Player Registrations</h1>
+<script>
+ if (sessionStorage.getItem('isAdmin') !== 'true') window.location.href='admin.html';
+</script>
 
-  <!-- Replace this src with your sheet's pubhtml link if different -->
-  <iframe id="sheetFrame" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vRoGtcyPOolNJIVIOjhoftnrL0WT6f3GdFE3ue1wzpPltbeU3Wf8lTO2RyhJrY-m6Oq5bj1TC3cZFgJ/pubhtml"></iframe>
+<div class="wrap">
+  <h1>🔐 Admin Panel — Registrations</h1>
 
-  <div class="actions">
-    <button id="openSheet">Open in Google Sheets (Edit)</button>
-    <button id="logoutBtn">Logout</button>
+  <div class="top">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input id="q" class="search" placeholder="Search..." />
+      <select id="filterYear" class="filter"><option value="">All Years</option></select>
+      <select id="filterSkill" class="filter"><option value="">All Skills</option></select>
+      <select id="filterBranch" class="filter"><option value="">All Branches</option></select>
+      <button id="btnRefresh">Refresh</button>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button id="btnExportExcel">Export Excel</button>
+      <button id="btnClear" class="danger">Clear All</button>
+      <button id="btnLogout">Logout</button>
+    </div>
   </div>
 
-  <p class="note">Tip: To edit cells, click "Open in Google Sheets (Edit)". The embedded view is for quick live-checking.</p>
+  <div class="grid">
+    <div>
+      <table id="tbl">
+        <thead><tr><th>Name</th><th>Branch</th><th>Contact</th><th>Year</th><th>Skill</th><th>Photo</th><th>Time</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="note">Tip: Click Export Excel to generate a downloadable .xlsx file.</p>
+    </div>
+
+    <div class="stats" id="statsPanel">
+      <h3>Stats</h3>
+      <div id="total">Total: 0</div>
+      <h4>By Skill</h4>
+      <div id="skillStats"></div>
+      <h4>By Year</h4>
+      <div id="yearStats"></div>
+      <h4>Top Branches</h4>
+      <div id="branchStats"></div>
+    </div>
+  </div>
 </div>
 
 <script>
-(function(){
-  // Simple client-side gate: redirect to login if not set
-  const isAdmin = sessionStorage.getItem('isAdmin');
-  if(!isAdmin || isAdmin !== 'true'){
-    // Not logged in — redirect to login page
-    window.location.href = 'admin.html';
-  }
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxPx8-4UZIeGUXtZvCvzxQWLzkK3bFT1Bg9L2pxR7Fm9u3FlYH4g8z__9oct-X3EkDn/exec"; // << REPLACE
+const GET_ALL = SCRIPT_URL + "?action=getAll";
+const GET_STATS = SCRIPT_URL + "?action=stats";
+const EXPORT_EXCEL = SCRIPT_URL + "?action=exportExcel";
+const CLEAR_URL = SCRIPT_URL + "?action=clear";
 
-  // Buttons
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    sessionStorage.removeItem('isAdmin');
-    window.location.href = 'admin.html';
+const tblBody = document.querySelector("#tbl tbody");
+const q = document.getElementById("q");
+const filterYear = document.getElementById("filterYear");
+const filterSkill = document.getElementById("filterSkill");
+const filterBranch = document.getElementById("filterBranch");
+const btnRefresh = document.getElementById("btnRefresh");
+const btnClear = document.getElementById("btnClear");
+const btnExportExcel = document.getElementById("btnExportExcel");
+const btnLogout = document.getElementById("btnLogout");
+
+let ALL_ROWS = [];
+
+function fetchJson(url, opts){ return fetch(url, opts).then(r => r.json()); }
+function formatTime(t){ try{ return new Date(t).toLocaleString(); }catch(e){return t;} }
+function escapeHtml(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+function renderTable(rows){
+  ALL_ROWS = rows;
+  tblBody.innerHTML = "";
+  rows.forEach(r=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${escapeHtml(r.name)}</td>
+                    <td>${escapeHtml(r.branch)}</td>
+                    <td>${escapeHtml(r.contact)}</td>
+                    <td>${escapeHtml(r.year)}</td>
+                    <td>${escapeHtml(r.skill)}</td>
+                    <td>${r.photo ? `<a href="${r.photo}" target="_blank"><img class="thumb" src="${r.photo}" /></a>` : ""}</td>
+                    <td>${escapeHtml(formatTime(r.timestamp))}</td>`;
+    tblBody.appendChild(tr);
   });
+}
 
-  document.getElementById('openSheet').addEventListener('click', () => {
-    // Replace this with the normal sheet share/edit link (not the pubhtml) if you want edit
-    const editLink = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit';
-    // Try to auto-detect sheet id from the iframe src (if in pubhtml format)
-    const iframeSrc = document.getElementById('sheetFrame').src;
-    if(iframeSrc.includes('/d/')){
-      const match = iframeSrc.match(/\/\/([^\/]+)/);
-      if(match && match[1]) {
-        window.open('https://docs.google.com/spreadsheets/d/' + match[1] + '/edit', '_blank');
-        return;
-      }
+function populateFilters(rows){
+  const years = new Set(), skills = new Set(), branches = new Set();
+  rows.forEach(r=>{ if(r.year) years.add(r.year); if(r.skill) skills.add(r.skill); if(r.branch) branches.add(r.branch); });
+  fillSelect(filterYear, ["","..."], [...years].sort());
+  fillSelect(filterSkill, ["","..."], [...skills].sort());
+  fillSelect(filterBranch, ["","..."], [...branches].sort());
+}
+function fillSelect(sel, prefix, arr){
+  const prev = sel.value || "";
+  sel.innerHTML = "";
+  prefix.forEach(v=>{ const opt = document.createElement("option"); opt.value = v==="..."?"":v; opt.textContent = v==="..."?"All":v; sel.appendChild(opt); });
+  arr.forEach(v=>{ const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
+  sel.value = prev;
+}
+
+function applyFilters(){
+  const query = (q.value||"").toLowerCase().trim();
+  const fy = filterYear.value, fs = filterSkill.value, fb = filterBranch.value;
+  const filtered = ALL_ROWS.filter(r=>{
+    if(fy && r.year !== fy) return false;
+    if(fs && r.skill !== fs) return false;
+    if(fb && r.branch !== fb) return false;
+    if(!query) return true;
+    return (r.name||"").toLowerCase().includes(query) || (r.branch||"").toLowerCase().includes(query) || (r.contact||"").toLowerCase().includes(query);
+  });
+  renderTable(filtered);
+}
+
+function loadData(){
+  btnRefresh.disabled = true;
+  Promise.all([fetchJson(GET_ALL), fetchJson(GET_STATS)])
+    .then(([listResp, statsResp])=>{
+      btnRefresh.disabled = false;
+      if(listResp.success) { renderTable(listResp.data || []); populateFilters(listResp.data || []); }
+      else alert("Error: " + (listResp.error||"unknown"));
+      if(statsResp.success) renderStats(statsResp.stats || {total:0});
+    })
+    .catch(err=>{ btnRefresh.disabled = false; alert(err); });
+}
+
+function renderStats(stats){
+  document.getElementById("total").textContent = "Total: " + (stats.total || 0);
+  function renderBucket(containerId, obj){ const el = document.getElementById(containerId); el.innerHTML=""; const pairs = Object.entries(obj).sort((a,b)=>b[1]-a[1]); pairs.forEach(([k,v])=>{ const d = document.createElement("div"); d.textContent = `${k} (${v})`; el.appendChild(d); }); }
+  renderBucket("skillStats", stats.bySkill||{}); renderBucket("yearStats", stats.byYear||{}); renderBucket("branchStats", stats.byBranch||{});
+}
+
+/* Export Excel */
+btnExportExcel.addEventListener("click", ()=>{
+  btnExportExcel.disabled = true;
+  fetch(EXPORT_EXCEL).then(r => r.json()).then(resp => {
+    btnExportExcel.disabled = false;
+    if (resp.success && resp.url) {
+      window.open(resp.url, "_blank");
+    } else {
+      alert("Export error: " + (resp.error || "unknown"));
     }
-    // fallback (replace YOUR_SHEET_ID with real id if desired)
-    window.open(editLink, '_blank');
-  });
-})();
+  }).catch(err => { btnExportExcel.disabled = false; alert(err); });
+});
+
+/* Clear */
+btnClear.addEventListener("click", ()=>{
+  if (!confirm("This will delete ALL registrations. Confirm?")) return;
+  fetch(CLEAR_URL, { method: "POST" }).then(r=>r.json()).then(resp=>{
+    if (resp.success) { alert("Cleared."); loadData(); } else alert("Error: " + (resp.error||"unknown"));
+  }).catch(err=>alert(err));
+});
+
+btnRefresh.addEventListener("click", loadData);
+q.addEventListener("input", applyFilters);
+filterYear.addEventListener("change", applyFilters);
+filterSkill.addEventListener("change", applyFilters);
+filterBranch.addEventListener("change", applyFilters);
+btnLogout.addEventListener("click", ()=>{ sessionStorage.removeItem('isAdmin'); window.location.href='admin.html'; });
+
+loadData();
 </script>
 </body>
 </html>
