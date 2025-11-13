@@ -1,189 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Registration Form for Night Tournament -- BPUT</title>
-
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Registration — BPUT Night Tournament</title>
 <style>
+  /* (styles kept similar to earlier design) */
+  body { font-family:"Cinzel",serif; background: linear-gradient(rgba(0,0,0,0.45),rgba(0,0,0,0.45)), url('https://raw.githubusercontent.com/saiamareshkumarsahoo-gif/cricket-form/main/bg.jpg.jpeg') no-repeat center center fixed; background-size:cover; padding:20px; color:#f7f7f7; }
+  .container{ max-width:600px;margin:auto;background:rgba(255,248,235,0.92);padding:25px;border-radius:15px;border:3px solid #bfa35f;color:#3b2f1e; }
+  label{font-weight:bold;font-size:16px}
+  input,select{width:100%;padding:12px;margin-top:5px;margin-bottom:14px;border-radius:8px;border:2px solid #c9ad75;background:#fff7e0}
+  button{width:100%;padding:12px;background:#b48a3b;color:white;border:none;border-radius:10px;font-size:16px;cursor:pointer}
+  .small{font-size:13px;color:#5a4527;margin-top:8px}
+  .img-preview{max-width:120px;border-radius:8px;border:1px solid #d4c6a3;margin-top:8px}
+</style>
+</head>
+<body>
 
-  /* 🔥 Main Background With Your Photo – Mobile Optimized */
-  body {
-    font-family: "Cinzel", serif;
-    background: 
-      linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
-      url('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBk...RgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy')
-      no-repeat center center fixed;
-    background-size: cover;
-    padding: 20px;
-    color: #f7f7f7;
-    animation: fadeIn 1.5s ease-in-out;
-  }
+<div class="container">
+  <h1 style="text-align:center">REGISTRATION FORM FOR NIGHT TOURNAMENT — BPUT</h1>
 
-  /* Auto-fit the background for SMALL screens */
-  @media (max-width: 600px) {
-    body {
-      background-position: top center;
-      background-attachment: scroll;
+  <form id="regForm">
+    <label>Player Name</label>
+    <input name="playerName" type="text" placeholder="Enter Player Name" required />
+
+    <label>Branch Name</label>
+    <input name="branch" type="text" placeholder="Enter Branch Name" required />
+
+    <label>Year</label>
+    <select name="year" required>
+      <option value="">Select Year</option>
+      <option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option>
+    </select>
+
+    <label>Player Skill</label>
+    <select name="skill" required>
+      <option value="">Select Skill</option><option>Batter</option><option>Bowler</option><option>All-Rounder</option>
+    </select>
+
+    <label>Contact Number</label>
+    <input name="contact" type="text" placeholder="Enter Contact Number" required />
+
+    <!-- NEW: Photo upload -->
+    <label>Player Photo (optional)</label>
+    <input id="photoInput" type="file" accept="image/*" />
+    <div id="previewWrap" style="display:flex;gap:12px;align-items:center;">
+      <img id="imgPreview" class="img-preview" src="" alt="" style="display:none" />
+      <div class="small">Upload a clear headshot (optional). Max ~5MB.</div>
+    </div>
+
+    <button type="submit">Submit</button>
+    <p class="small">Note: Once submitted, duplicate Name+Branch+Contact will be blocked.</p>
+  </form>
+</div>
+
+<!-- Success popup -->
+<div id="successPopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);justify-content:center;align-items:center;">
+  <div style="background:#fff8e0;padding:20px;border-radius:12px;border:3px solid #bfa35f;text-align:center;max-width:320px;">
+    <h3 style="color:#6b4e16">🎉 Registration Successful</h3>
+    <p>Your registration has been recorded.</p>
+    <button onclick="closePopup()" style="background:#b48a3b;color:#fff;padding:10px;border-radius:8px;border:none;cursor:pointer">OK</button>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxPx8-4UZIeGUXtZvCvzxQWLzkK3bFT1Bg9L2pxR7Fm9u3FlYH4g8z__9oct-X3EkDn/exec"; // << REPLACE WITH YOUR /exec URL
+
+const form = document.getElementById('regForm');
+const photoInput = document.getElementById('photoInput');
+const imgPreview = document.getElementById('imgPreview');
+
+photoInput.addEventListener('change', () => {
+  const f = photoInput.files[0];
+  if (!f) { imgPreview.style.display = 'none'; imgPreview.src = ''; return; }
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    imgPreview.src = ev.target.result;
+    imgPreview.style.display = 'block';
+  };
+  reader.readAsDataURL(f);
+});
+
+// Helper: read file as base64 (without prefix)
+function readFileAsBase64(file){
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => {
+      const dataUrl = fr.result; // "data:image/jpeg;base64,...."
+      const comma = dataUrl.indexOf(',');
+      const base64 = dataUrl.substring(comma+1);
+      // detect mime
+      const mime = dataUrl.substring(5, dataUrl.indexOf(';'));
+      res({ base64, mime, name: file.name });
+    };
+    fr.onerror = rej;
+    fr.readAsDataURL(file);
+  });
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const f = photoInput.files[0];
+  const fd = new FormData();
+  // append other fields
+  fd.append('playerName', form.playerName.value.trim());
+  fd.append('branch', form.branch.value.trim());
+  fd.append('year', form.year.value);
+  fd.append('skill', form.skill.value);
+  fd.append('contact', form.contact.value.trim());
+
+  if (f) {
+    try {
+      const fileData = await readFileAsBase64(f);
+      // limit size (optional)
+      // if (fileData.base64.length > 5*1024*1024) { alert("Image too large"); return; }
+      fd.append('photoData', fileData.base64);
+      fd.append('photoType', fileData.mime);
+      fd.append('photoName', fileData.name);
+    } catch(err){
+      alert("Error reading image: " + err);
+      return;
     }
   }
 
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-  .container {
-    max-width: 600px;
-    margin: auto;
-    background: rgba(255, 248, 235, 0.92);
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: 0 0 18px rgba(0,0,0,0.4);
-    border: 3px solid #bfa35f;
-    animation: pop 0.8s ease;
-    color: #3b2f1e;
-  }
-
-  @keyframes pop { 0% { transform: scale(0.8);} 100% { transform: scale(1);} }
-
-  h1 {
-    text-align: center;
-    font-size: 26px;
-    margin-bottom: 20px;
-    text-shadow: 1px 1px #fff3d1;
-    animation: glow 2s infinite alternate;
-  }
-
-  @keyframes glow { from { text-shadow: 0 0 10px #bfa35f;} to { text-shadow: 0 0 20px #d8c17a;} }
-
-  label { font-size: 17px; font-weight: bold; }
-
-  input, select {
-    width: 100%;
-    padding: 12px;
-    margin-top: 5px;
-    margin-bottom: 18px;
-    border-radius: 8px;
-    border: 2px solid #c9ad75;
-    background: #fff7e0;
-    font-size: 16px;
-    transition: 0.3s;
-  }
-
-  input:focus, select:focus {
-    box-shadow: 0 0 10px #c9ad75;
-    transform: scale(1.02);
-  }
-
-  button {
-    width: 100%;
-    padding: 14px;
-    background: #b48a3b;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 18px;
-    cursor: pointer;
-    transition: 0.3s;
-  }
-
-  button:hover {
-    background: #8e6b2a;
-    transform: scale(1.03);
-    box-shadow: 0 0 12px #bfa35f;
-  }
-
-  @media (max-width: 480px) {
-    .container { padding: 20px; }
-    h1 { font-size: 22px; }
-    input, select { font-size: 15px; }
-  }
-
-</style>
-</head>
-
-<body>
-
-  <div class="container">
-    <h1>REGISTRATION FORM FOR NIGHT TOURNAMENT — BPUT</h1>
-
-    <form id="regForm">
-
-      <label>Player Name</label>
-      <input name="playerName" type="text" placeholder="Enter Player Name" required />
-
-      <label>Branch Name</label>
-      <input name="branch" type="text" placeholder="Enter Branch Name" required />
-
-      <label>Player Skill</label>
-      <select name="skill" required>
-        <option value="">Select Skill</option>
-        <option>Batter</option>
-        <option>Bowler</option>
-        <option>All-Rounder</option>
-      </select>
-
-      <label>Contact Number</label>
-      <input name="contact" type="text" placeholder="Enter Contact Number" required />
-
-      <button type="submit">Submit</button>
-
-    </form>
-  </div>
-
-  <!-- SUCCESS POPUP -->
-  <div id="successPopup" style="
-    display:none;
-    position:fixed;
-    top:0; left:0;
-    width:100%; height:100%;
-    background:rgba(0,0,0,0.6);
-    backdrop-filter:blur(4px);
-    justify-content:center;
-    align-items:center;">
-    
-    <div style="
-      background:#fff8e0;
-      padding:25px;
-      border-radius:15px;
-      border:3px solid #bfa35f;
-      text-align:center;
-      width:80%;
-      max-width:320px;
-      animation:pop 0.6s;">
-      
-      <h2 style="color:#6b4e16;">🎉 Registration Successful!</h2>
-      <p style="font-size:16px;">Your details have been submitted.</p>
-      <button onclick="closePopup()" style="
-        margin-top:15px;
-        background:#b48a3b;
-        color:#fff;
-        padding:10px 20px;
-        border:none;
-        border-radius:10px;
-        cursor:pointer;">
-        OK
-      </button>
-    </div>
-  </div>
-
-<script>
-  const scriptURL = "https://script.google.com/macros/s/AKfycbwNL5vzDUkxcB0mWS1Zv58kHv-UgOXb8h7gF564Ye87MmFPJ1PoNsfSPgsAeH8XDFTy/exec";
-  const form = document.getElementById('regForm');
-
-  form.addEventListener('submit', e => {
-    e.preventDefault();
-
-    fetch(scriptURL, { method: 'POST', body: new FormData(form)})
-      .then(() => {
+  // POST to Apps Script
+  fetch(SCRIPT_URL, { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(resp => {
+      if (!resp) { alert("No response from server"); return; }
+      if (resp.success === false && resp.message === "duplicate") {
+        alert("You have already registered (duplicate).");
+        return;
+      }
+      if (resp.success === true) {
         document.getElementById('successPopup').style.display = 'flex';
         form.reset();
-      })
-      .catch(err => alert('Error: ' + err));
-  });
+        imgPreview.style.display = 'none';
+        imgPreview.src = '';
+      } else {
+        alert("Error: " + (resp.error || resp.message || "unknown"));
+      }
+    })
+    .catch(err => alert("Error: " + err));
+});
 
-  function closePopup() {
-    document.getElementById('successPopup').style.display = 'none';
-  }
+function closePopup(){ document.getElementById('successPopup').style.display = 'none'; }
 </script>
-
 </body>
 </html>
