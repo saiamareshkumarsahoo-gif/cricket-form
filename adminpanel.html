@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin Panel — Registrations</title>
+<style>
+  body{ background:#f5e9d2; font-family:"Cinzel",serif; margin:0; padding:24px; }
+  .panel{ max-width:980px; margin:24px auto; background:#fff8e0; padding:20px; border-radius:12px; border:3px solid #bfa35f; box-shadow:0 10px 30px rgba(0,0,0,0.12); }
+  h1{ text-align:center; color:#6b4e16; margin:6px 0 18px; }
+  iframe{ width:100%; height:640px; border-radius:10px; border:2px solid #bfa35f; }
+  .actions{ display:flex; gap:12px; margin-top:14px; }
+  .actions button{ flex:1; padding:12px; border-radius:10px; border:none; cursor:pointer; background:#b48a3b; color:#fff; font-size:15px; }
+  .actions button:hover{ background:#8e6b2a; }
+  .note{ font-size:13px; color:#5a4527; text-align:center; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<div class="panel" id="panel">
+  <h1>🔐 Admin Panel — Player Registrations</h1>
+
+  <!-- Replace this src with your sheet's pubhtml link if different -->
+  <iframe id="sheetFrame" src="https://docs.google.com/spreadsheets/d/e/2PACX-1vRoGtcyPOolNJIVIOjhoftnrL0WT6f3GdFE3ue1wzpPltbeU3Wf8lTO2RyhJrY-m6Oq5bj1TC3cZFgJ/pubhtml"></iframe>
+
+  <div class="actions">
+    <button id="openSheet">Open in Google Sheets (Edit)</button>
+    <button id="logoutBtn">Logout</button>
+  </div>
+
+  <p class="note">Tip: To edit cells, click "Open in Google Sheets (Edit)". The embedded view is for quick live-checking.</p>
+</div>
+
+<script>
+(function(){
+  // Simple client-side gate: redirect to login if not set
+  const isAdmin = sessionStorage.getItem('isAdmin');
+  if(!isAdmin || isAdmin !== 'true'){
+    // Not logged in — redirect to login page
+    window.location.href = 'admin.html';
+  }
+
+  // Buttons
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    sessionStorage.removeItem('isAdmin');
+    window.location.href = 'admin.html';
+  });
+
+  document.getElementById('openSheet').addEventListener('click', () => {
+    // Replace this with the normal sheet share/edit link (not the pubhtml) if you want edit
+    const editLink = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit';
+    // Try to auto-detect sheet id from the iframe src (if in pubhtml format)
+    const iframeSrc = document.getElementById('sheetFrame').src;
+    if(iframeSrc.includes('/d/')){
+      const match = iframeSrc.match(/\/\/([^\/]+)/);
+      if(match && match[1]) {
+        window.open('https://docs.google.com/spreadsheets/d/' + match[1] + '/edit', '_blank');
+        return;
+      }
+    }
+    // fallback (replace YOUR_SHEET_ID with real id if desired)
+    window.open(editLink, '_blank');
+  });
+})();
+</script>
+</body>
+</html>

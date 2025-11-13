@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin Login</title>
+<style>
+  body{ background:#f5e9d2; font-family:"Cinzel",serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }
+  .login-box{ background:#fff8e0; padding:28px; width:360px; border-radius:14px; border:3px solid #bfa35f; box-shadow:0 8px 24px rgba(0,0,0,0.15); text-align:center; }
+  h2{ color:#6b4e16; margin:0 0 16px; }
+  input{ width:100%; padding:12px; margin-bottom:14px; border-radius:8px; border:2px solid #c9ad75; background:#fff7e0; font-size:15px; }
+  button{ width:100%; padding:12px; background:#b48a3b; color:white; border:none; border-radius:10px; font-size:16px; cursor:pointer; }
+  button:hover{ background:#8e6b2a; }
+  #error{ color:#b00020; margin-top:8px; font-size:14px; min-height:18px; }
+  .small{ font-size:13px; color:#5a4527; margin-top:10px; }
+</style>
+</head>
+<body>
+  <div class="login-box">
+    <h2>Admin Login</h2>
+    <input id="password" type="password" placeholder="Enter Admin Password" autocomplete="off" />
+    <button id="loginBtn">Login</button>
+    <p id="error"></p>
+    <p class="small">This page protects the admin panel from casual access. Do not share the password publicly.</p>
+  </div>
+
+<script>
+(function(){
+  const loginBtn = document.getElementById('loginBtn');
+  const pwdInput = document.getElementById('password');
+  const errorP = document.getElementById('error');
+
+  // <<-- CHANGE THE PASSWORD HERE IF NEEDED -->>
+  const CORRECT_PASSWORD = "bputadmin123";
+
+  loginBtn.addEventListener('click', tryLogin);
+  pwdInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') tryLogin(); });
+
+  function tryLogin(){
+    errorP.textContent = "";
+    const val = pwdInput.value.trim();
+    if(!val){ errorP.textContent = "Please enter the password."; return; }
+    if(val === CORRECT_PASSWORD){
+      // set a session flag and redirect to admin panel
+      sessionStorage.setItem('isAdmin', 'true');
+      window.location.href = 'adminpanel.html';
+    } else {
+      errorP.textContent = "Incorrect password!";
+      pwdInput.value = "";
+      pwdInput.focus();
+    }
+  }
+})();
+</script>
+</body>
+</html>
